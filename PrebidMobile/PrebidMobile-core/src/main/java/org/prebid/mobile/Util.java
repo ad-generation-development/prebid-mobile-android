@@ -51,12 +51,10 @@ import java.util.Set;
 
 public class Util {
 
-    static final String MOPUB_BANNER_VIEW_CLASS = "com.mopub.mobileads.MoPubView";
-    static final String MOPUB_INTERSTITIAL_CLASS = "com.mopub.mobileads.MoPubInterstitial";
-    static final String DFP_AD_REQUEST_CLASS = "com.google.android.gms.ads.doubleclick.PublisherAdRequest";
+    static final String ADG_VIEW_CLASS = "com.socdm.d.adgeneration.ADG";
+    static final String ADG_INTERSTITIAL_VIEW_CLASS = "com.socdm.d.adgeneration.interstitial.ADGInterstitial";
     private static final Random RANDOM = new Random();
     private static final HashSet<String> reservedKeys;
-    private static final int MoPubQueryStringLimit = 4000;
 
     static {
         reservedKeys = new HashSet<>();
@@ -81,7 +79,7 @@ public class Util {
      */
     @TargetApi(19)
     public static void resizeInBannerNative(@NonNull final ViewGroup adView, final ViewGroup.LayoutParams params, @Nullable final ResizeInBannerNativeListener listener) {
-        if (adView.getClass() == getClassFromString(MOPUB_BANNER_VIEW_CLASS)) {
+        if (adView.getClass() == getClassFromString(ADG_VIEW_CLASS)) {
 
             final Handler handler = new Handler(Looper.getMainLooper());
             final long startTime = System.currentTimeMillis();
@@ -394,55 +392,26 @@ public class Util {
 
     static boolean supportedAdObject(Object adObj) {
         if (adObj == null) return false;
-        if (adObj.getClass() == getClassFromString(MOPUB_BANNER_VIEW_CLASS)
-                || adObj.getClass() == getClassFromString(MOPUB_INTERSTITIAL_CLASS)
-                || adObj.getClass() == getClassFromString(DFP_AD_REQUEST_CLASS))
+        if (adObj.getClass() == getClassFromString(ADG_VIEW_CLASS)
+                || adObj.getClass() == getClassFromString(ADG_INTERSTITIAL_VIEW_CLASS))
             return true;
         return false;
     }
 
     static void apply(HashMap<String, String> bids, Object adObj) {
         if (adObj == null) return;
-        if (adObj.getClass() == getClassFromString(MOPUB_BANNER_VIEW_CLASS)
-                || adObj.getClass() == getClassFromString(MOPUB_INTERSTITIAL_CLASS)) {
-            handleMoPubKeywordsUpdate(bids, adObj);
-        } else if (adObj.getClass() == getClassFromString(DFP_AD_REQUEST_CLASS)) {
-            handleDFPCustomTargetingUpdate(bids, adObj);
+        if (adObj.getClass() == getClassFromString(ADG_VIEW_CLASS)
+                || adObj.getClass() == getClassFromString(ADG_INTERSTITIAL_VIEW_CLASS)) {
+            handleADGParamsUpdate(bids, adObj);
         }
     }
 
-    private static void handleMoPubKeywordsUpdate(HashMap<String, String> bids, Object adObj) {
-        removeUsedKeywordsForMoPub(adObj);
+    private static void handleADGParamsUpdate(HashMap<String, String> bids, Object adObj) {
+        removeUsedParamsForADG(adObj);
         if (bids != null && !bids.isEmpty()) {
-            StringBuilder keywordsBuilder = new StringBuilder();
             for (String key : bids.keySet()) {
+                Util.callMethodOnObject(adObj, "addRequestOptionParam", key, bids.get(key));
                 addReservedKeys(key);
-                keywordsBuilder.append(key).append(":").append(bids.get(key)).append(",");
-            }
-            String pbmKeywords = keywordsBuilder.toString();
-            String adViewKeywords = (String) Util.callMethodOnObject(adObj, "getKeywords");
-            if (!TextUtils.isEmpty(adViewKeywords)) {
-                adViewKeywords = pbmKeywords + adViewKeywords;
-            } else {
-                adViewKeywords = pbmKeywords;
-            }
-            // only set keywords if less than mopub query string limit
-            if (adViewKeywords.length() <= MoPubQueryStringLimit) {
-                Util.callMethodOnObject(adObj, "setKeywords", adViewKeywords);
-            }
-        }
-    }
-
-    private static void handleDFPCustomTargetingUpdate(HashMap<String, String> bids, Object adObj) {
-        removeUsedCustomTargetingForDFP(adObj);
-        if (bids != null && !bids.isEmpty()) {
-            Bundle bundle = (Bundle) Util.callMethodOnObject(adObj, "getCustomTargeting");
-            if (bundle != null) {
-                // retrieve keywords from mopub adview
-                for (String key : bids.keySet()) {
-                    bundle.putString(key, bids.get(key));
-                    addReservedKeys(key);
-                }
             }
         }
     }
@@ -453,35 +422,15 @@ public class Util {
         }
     }
 
-    private static void removeUsedKeywordsForMoPub(Object adViewObj) {
-        String adViewKeywords = (String) Util.callMethodOnObject(adViewObj, "getKeywords");
-        if (!TextUtils.isEmpty(adViewKeywords) && reservedKeys != null && !reservedKeys.isEmpty()) {
-            // Copy used keywords to a temporary list to avoid concurrent modification
-            // while iterating through the list
-            String[] adViewKeywordsArray = adViewKeywords.split(",");
-            ArrayList<String> adViewKeywordsArrayList = new ArrayList<>(Arrays.asList(adViewKeywordsArray));
-            LinkedList<String> toRemove = new LinkedList<>();
-            for (String keyword : adViewKeywordsArray) {
-                if (!TextUtils.isEmpty(keyword) && keyword.contains(":")) {
-                    String[] keywordArray = keyword.split(":");
-                    if (keywordArray.length > 0) {
-                        if (reservedKeys.contains(keywordArray[0])) {
-                            toRemove.add(keyword);
-                        }
+    private static void removeUsedParamsForADG(Object adViewObj) {
+        Map<String, String> adViewOptionParams = (Map<String, String>) Util.callMethodOnObject(adViewObj, "getRequestOptionParams");
+        if (adViewOptionParams != null && !adViewOptionParams.isEmpty() && reservedKeys != null && !reservedKeys.isEmpty()) {
+            for (String key : adViewOptionParams.keySet()) {
+                if (!TextUtils.isEmpty(key)) {
+                    if (reservedKeys.contains(key)) {
+                        Util.callMethodOnObject(adViewObj, "removeRequestOptionParam",key);
                     }
                 }
-            }
-            adViewKeywordsArrayList.removeAll(toRemove);
-            adViewKeywords = TextUtils.join(",", adViewKeywordsArrayList);
-            Util.callMethodOnObject(adViewObj, "setKeywords", adViewKeywords);
-        }
-    }
-
-    private static void removeUsedCustomTargetingForDFP(Object adRequestObj) {
-        Bundle bundle = (Bundle) Util.callMethodOnObject(adRequestObj, "getCustomTargeting");
-        if (bundle != null && reservedKeys != null) {
-            for (String key : reservedKeys) {
-                bundle.remove(key);
             }
         }
     }
