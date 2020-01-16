@@ -1,9 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true">
+    <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
             <certificates src="user" />
         </trust-anchors>
     </base-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- FAN -->
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <!-- 87769 OMSDK -->
+        <domain includeSubdomains="true">complianceomsdk.iabtechlab.com</domain>
+        <!-- 96393 -->
+        <domain includeSubdomains="true">s3-ap-northeast-1.amazonaws.com</domain>
+    </domain-config>
 </network-security-config>
