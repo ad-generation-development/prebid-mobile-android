@@ -20,8 +20,8 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
 
-import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
-import com.mopub.mobileads.MoPubView;
+
+import com.socdm.d.adgeneration.ADG;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.junit.Test;
@@ -35,6 +35,7 @@ import org.robolectric.shadows.ShadowLooper;
 import org.robolectric.shadows.ShadowNetworkInfo;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.UUID;
 
@@ -62,7 +63,7 @@ public class ResultCodeTest extends BaseSetup {
         PrebidMobile.setApplicationContext(null);
         server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.oneBidFromAppNexus()));
         InterstitialAdUnit adUnit = new InterstitialAdUnit("123456");
-        MoPubView testView = new MoPubView(activity);
+        ADG testView = new ADG(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
         adUnit.fetchDemand(testView, mockListener);
         verify(mockListener).onComplete(ResultCode.INVALID_CONTEXT);
@@ -79,7 +80,7 @@ public class ResultCodeTest extends BaseSetup {
         PrebidMobile.setPrebidServerAccountId("123456");
         server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.oneBidFromAppNexus()));
         BannerAdUnit adUnit = new BannerAdUnit("123456", 300, 250);
-        MoPubView testView = new MoPubView(activity);
+        ADG testView = new ADG(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
         adUnit.fetchDemand(testView, mockListener);
         DemandFetcher fetcher = (DemandFetcher) FieldUtils.readField(adUnit, "fetcher", true);
@@ -91,129 +92,18 @@ public class ResultCodeTest extends BaseSetup {
         Robolectric.flushBackgroundThreadScheduler();
         Robolectric.flushForegroundThreadScheduler();
         verify(mockListener).onComplete(ResultCode.SUCCESS);
-        assertEquals("hb_pb:0.50,hb_env:mobile-app,hb_pb_appnexus:0.50,hb_size:300x250,hb_bidder_appnexus:appnexus,hb_bidder:appnexus,hb_cache_id:df4aba04-5e69-44b8-8608-058ab21600b8,hb_env_appnexus:mobile-app,hb_size_appnexus:300x250,hb_cache_id_appnexus:df4aba04-5e69-44b8-8608-058ab21600b8,", testView.getKeywords());
-
-    }
-
-    @Test
-    public void testSuccessForDFP() throws Exception {
-        HttpUrl httpUrl = server.url("/");
-        Host.CUSTOM.setHostUrl(httpUrl.toString());
-        PrebidMobile.setPrebidServerHost(Host.CUSTOM);
-        PrebidMobile.setApplicationContext(activity.getApplicationContext());
-        PrebidMobile.setPrebidServerAccountId("123456");
-        server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.oneBidFromAppNexus()));
-        BannerAdUnit adUnit = new BannerAdUnit("123456", 300, 250);
-        PublisherAdRequest testRequest = new PublisherAdRequest.Builder().build();
-        OnCompleteListener mockListener = mock(OnCompleteListener.class);
-        adUnit.fetchDemand(testRequest, mockListener);
-        DemandFetcher fetcher = (DemandFetcher) FieldUtils.readField(adUnit, "fetcher", true);
-        PrebidMobile.setTimeoutMillis(Integer.MAX_VALUE);
-        ShadowLooper fetcherLooper = shadowOf(fetcher.getHandler().getLooper());
-        fetcherLooper.runOneTask();
-        ShadowLooper demandLooper = shadowOf(fetcher.getDemandHandler().getLooper());
-        demandLooper.runOneTask();
-        Robolectric.flushBackgroundThreadScheduler();
-        Robolectric.flushForegroundThreadScheduler();
-        verify(mockListener).onComplete(ResultCode.SUCCESS);
-        Bundle bundle = testRequest.getCustomTargeting();
-        assertEquals(10, bundle.size());
-        assertTrue(bundle.containsKey("hb_pb"));
-        assertEquals("0.50", bundle.get("hb_pb"));
-        assertTrue(bundle.containsKey("hb_bidder"));
-        assertEquals("appnexus", bundle.get("hb_bidder"));
-        assertTrue(bundle.containsKey("hb_bidder_appnexus"));
-        assertEquals("appnexus", bundle.get("hb_bidder_appnexus"));
-        assertTrue(bundle.containsKey("hb_cache_id"));
-        assertEquals("df4aba04-5e69-44b8-8608-058ab21600b8", bundle.get("hb_cache_id"));
-        assertTrue(bundle.containsKey("hb_cache_id_appnexus"));
-        assertEquals("df4aba04-5e69-44b8-8608-058ab21600b8", bundle.get("hb_cache_id_appnexus"));
-        assertTrue(bundle.containsKey("hb_env"));
-        assertEquals("mobile-app", bundle.get("hb_env"));
-        assertTrue(bundle.containsKey("hb_env_appnexus"));
-        assertEquals("mobile-app", bundle.get("hb_env_appnexus"));
-        assertTrue(bundle.containsKey("hb_pb_appnexus"));
-        assertEquals("0.50", bundle.get("hb_pb_appnexus"));
-        assertTrue(bundle.containsKey("hb_size"));
-        assertEquals("300x250", bundle.get("hb_size"));
-        assertTrue(bundle.containsKey("hb_size_appnexus"));
-        assertEquals("300x250", bundle.get("hb_size_appnexus"));
-    }
-
-    @Test
-    public void testSuccessRubiconForDFP() throws Exception {
-        HttpUrl httpUrl = server.url("/");
-        Host.CUSTOM.setHostUrl(httpUrl.toString());
-        PrebidMobile.setPrebidServerHost(Host.CUSTOM);
-        PrebidMobile.setApplicationContext(activity.getApplicationContext());
-        PrebidMobile.setPrebidServerAccountId("123456");
-        server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.oneBidFromRubicon()));
-        BannerAdUnit adUnit = new BannerAdUnit("123456", 300, 250);
-        PublisherAdRequest testRequest = new PublisherAdRequest.Builder().build();
-        OnCompleteListener mockListener = mock(OnCompleteListener.class);
-        adUnit.fetchDemand(testRequest, mockListener);
-        DemandFetcher fetcher = (DemandFetcher) FieldUtils.readField(adUnit, "fetcher", true);
-        PrebidMobile.setTimeoutMillis(Integer.MAX_VALUE);
-        ShadowLooper fetcherLooper = shadowOf(fetcher.getHandler().getLooper());
-        fetcherLooper.runOneTask();
-        ShadowLooper demandLooper = shadowOf(fetcher.getDemandHandler().getLooper());
-        demandLooper.runOneTask();
-        Robolectric.flushBackgroundThreadScheduler();
-        Robolectric.flushForegroundThreadScheduler();
-
-        verify(mockListener).onComplete(ResultCode.SUCCESS);
-
-        Bundle bundle = testRequest.getCustomTargeting();
-        assertEquals(16, bundle.size());
-        String hb_pb = "hb_pb";
-        assertTrue(bundle.containsKey(hb_pb));
-        assertEquals("1.20", bundle.get(hb_pb));
-        String hb_pb_rubicon = "hb_pb_rubicon";
-        assertTrue(bundle.containsKey(hb_pb_rubicon));
-        assertEquals("1.20", bundle.get(hb_pb_rubicon));
-        String hb_bidder = "hb_bidder";
-        assertTrue(bundle.containsKey(hb_bidder));
-        assertEquals("rubicon", bundle.get(hb_bidder));
-        String hb_bidder_rubicon = "hb_bidder_rubicon";
-        assertTrue(bundle.containsKey(hb_bidder_rubicon));
-        assertEquals("rubicon", bundle.get(hb_bidder_rubicon));
-        String hb_cache_id = "hb_cache_id";
-        assertTrue(bundle.containsKey(hb_cache_id));
-        assertEquals("a2f41588-4727-425c-9ef0-3b382debef1e", bundle.get(hb_cache_id));
-        String hb_cache_id_rubicon = "hb_cache_id_rubicon";
-        assertTrue(bundle.containsKey(hb_cache_id_rubicon));
-        assertEquals("a2f41588-4727-425c-9ef0-3b382debef1e", bundle.get(hb_cache_id_rubicon));
-        String hb_env = "hb_env";
-        assertTrue(bundle.containsKey(hb_env));
-        assertEquals("mobile-app", bundle.get(hb_env));
-        String hb_env_rubicon = "hb_env_rubicon";
-        assertTrue(bundle.containsKey(hb_env_rubicon));
-        assertEquals("mobile-app", bundle.get(hb_env_rubicon));
-        String hb_size = "hb_size";
-        assertTrue(bundle.containsKey(hb_size));
-        assertEquals("300x250", bundle.get(hb_size));
-        String hb_size_rubicon = "hb_size_rubicon";
-        assertTrue(bundle.containsKey(hb_size_rubicon));
-        assertEquals("300x250", bundle.get(hb_size_rubicon));
-
-        String hb_cache_hostpath = "hb_cache_hostpath";
-        assertTrue(bundle.containsKey(hb_cache_hostpath));
-        assertEquals("https://prebid-cache-europe.rubiconproject.com/cache", bundle.get(hb_cache_hostpath));
-        String hb_cache_hostpath_rubicon = "hb_cache_hostpath_rubicon";
-        assertTrue(bundle.containsKey(hb_cache_hostpath_rubicon));
-        assertEquals("https://prebid-cache-europe.rubiconproject.com/cache", bundle.get(hb_cache_hostpath_rubicon));
-        String hb_cache_path = "hb_cache_path";
-        assertTrue(bundle.containsKey(hb_cache_path));
-        assertEquals("/cache", bundle.get(hb_cache_path));
-        String hb_cache_path_rubicon = "hb_cache_path_rubicon";
-        assertTrue(bundle.containsKey(hb_cache_path_rubicon));
-        assertEquals("/cache", bundle.get(hb_cache_path_rubicon));
-        String hb_cache_host_rubicon = "hb_cache_host_rubicon";
-        assertTrue(bundle.containsKey(hb_cache_host_rubicon));
-        assertEquals("prebid-cache-europe.rubiconproject.com", bundle.get(hb_cache_host_rubicon));
-        String hb_cache_host = "hb_cache_host";
-        assertTrue(bundle.containsKey(hb_cache_host));
-        assertEquals("prebid-cache-europe.rubiconproject.com", bundle.get(hb_cache_host));
+        assertEquals(new HashMap(){{
+            put("hb_pb", "0.50");
+            put("hb_env", "mobile-app");
+            put("hb_pb_appnexus","0.50");
+            put("hb_size","300x250");
+            put("hb_bidder_appnexus","appnexus");
+            put("hb_bidder","appnexus");
+            put("hb_cache_id","df4aba04-5e69-44b8-8608-058ab21600b8");
+            put("hb_env_appnexus","mobile-app");
+            put("hb_size_appnexus","300x250");
+            put("hb_cache_id_appnexus","df4aba04-5e69-44b8-8608-058ab21600b8");
+        }},testView.getRequestOptionParams());
     }
 
     @Test
@@ -225,7 +115,7 @@ public class ResultCodeTest extends BaseSetup {
         ShadowNetworkInfo shadowOfActiveNetworkInfo = shadowOf(connectivityManager.getActiveNetworkInfo());
         shadowOfActiveNetworkInfo.setConnectionStatus(false);
         BannerAdUnit adUnit = new BannerAdUnit("123456", 300, 250);
-        MoPubView testView = new MoPubView(activity);
+        ADG testView = new ADG(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
         adUnit.fetchDemand(testView, mockListener);
         verify(mockListener).onComplete(ResultCode.NETWORK_ERROR);
@@ -266,7 +156,7 @@ public class ResultCodeTest extends BaseSetup {
         PrebidMobile.setPrebidServerAccountId("123456");
         server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.noBid()));
         BannerAdUnit adUnit = new BannerAdUnit("123456", 300, 250);
-        MoPubView testView = new MoPubView(activity);
+        ADG testView = new ADG(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
         adUnit.fetchDemand(testView, mockListener);
         DemandFetcher fetcher = (DemandFetcher) FieldUtils.readField(adUnit, "fetcher", true);
@@ -278,7 +168,7 @@ public class ResultCodeTest extends BaseSetup {
         Robolectric.flushBackgroundThreadScheduler();
         Robolectric.flushForegroundThreadScheduler();
         verify(mockListener).onComplete(ResultCode.NO_BIDS);
-        assertEquals(null, testView.getKeywords());
+        assertEquals(null, testView.getRequestOptionParams());
     }
 
     @Test
@@ -290,7 +180,7 @@ public class ResultCodeTest extends BaseSetup {
         PrebidMobile.setPrebidServerAccountId("123456");
         server.enqueue(new MockResponse().setResponseCode(200).setBody(MockPrebidServerResponses.noBidFromRubicon()));
         BannerAdUnit adUnit = new BannerAdUnit("123456", 300, 250);
-        MoPubView testView = new MoPubView(activity);
+        ADG testView = new ADG(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
         adUnit.fetchDemand(testView, mockListener);
         DemandFetcher fetcher = (DemandFetcher) FieldUtils.readField(adUnit, "fetcher", true);
@@ -303,14 +193,14 @@ public class ResultCodeTest extends BaseSetup {
         Robolectric.flushForegroundThreadScheduler();
         verify(mockListener).onComplete(ResultCode.NO_BIDS);
 
-        assertNull(testView.getKeywords());
+        assertNull(testView.getRequestOptionParams());
     }
 
     @Test
     public void testEmptyAccountId() throws Exception {
         PrebidMobile.setPrebidServerAccountId("");
         BannerAdUnit adUnit = new BannerAdUnit("123456", 320, 50);
-        MoPubView testView = new MoPubView(activity);
+        ADG testView = new ADG(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
         adUnit.fetchDemand(testView, mockListener);
         verify(mockListener).onComplete(ResultCode.INVALID_ACCOUNT_ID);
@@ -320,7 +210,7 @@ public class ResultCodeTest extends BaseSetup {
     public void testEmptyConfigId() throws Exception {
         PrebidMobile.setPrebidServerAccountId("123456");
         BannerAdUnit adUnit = new BannerAdUnit("", 320, 50);
-        MoPubView testView = new MoPubView(activity);
+        ADG testView = new ADG(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
         adUnit.fetchDemand(testView, mockListener);
         verify(mockListener).onComplete(ResultCode.INVALID_CONFIG_ID);
@@ -332,21 +222,10 @@ public class ResultCodeTest extends BaseSetup {
         Host.CUSTOM.setHostUrl("");
         PrebidMobile.setPrebidServerHost(Host.CUSTOM);
         BannerAdUnit adUnit = new BannerAdUnit("123456", 320, 50);
-        MoPubView testView = new MoPubView(activity);
+        ADG testView = new ADG(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
         adUnit.fetchDemand(testView, mockListener);
         verify(mockListener).onComplete(ResultCode.INVALID_HOST_URL);
-    }
-
-    @Test
-    public void testSupportMultipleSizesForDFPBanner() throws Exception {
-        PrebidMobile.setPrebidServerAccountId("123456");
-        BannerAdUnit adUnit = new BannerAdUnit("123456", 320, 50);
-        adUnit.addAdditionalSize(300, 250);
-        OnCompleteListener mockListener = mock(OnCompleteListener.class);
-        PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
-        adUnit.fetchDemand(builder.build(), mockListener);
-        verify(mockListener, never()).onComplete(ResultCode.INVALID_SIZE);
     }
 
     @Test
@@ -354,7 +233,7 @@ public class ResultCodeTest extends BaseSetup {
         PrebidMobile.setPrebidServerAccountId("123456");
         BannerAdUnit adUnit = new BannerAdUnit("123456", 320, 50);
         adUnit.addAdditionalSize(-1, 250);
-        MoPubView testView = new MoPubView(activity);
+        ADG testView = new ADG(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
         adUnit.fetchDemand(testView, mockListener);
         verify(mockListener).onComplete(ResultCode.INVALID_SIZE);
