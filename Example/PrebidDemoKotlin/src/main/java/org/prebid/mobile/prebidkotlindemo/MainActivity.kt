@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
 
     // Default values
     private var adType = "Banner"
-    private var adServer = "DFP"
+    private var adServer = "ADG"
     private var adSize = "300x250"
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -16,9 +16,8 @@
 
 package org.prebid.mobile;
 
-import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
-import com.mopub.mobileads.MoPubInterstitial;
-import com.mopub.mobileads.MoPubView;
+import com.socdm.d.adgeneration.ADG;
+import com.socdm.d.adgeneration.interstitial.ADGInterstitial;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -60,62 +59,50 @@ public class UtilTest extends BaseSetup {
 
     @Test
     public void testGetClassFromString() throws Exception {
-        assertEquals(MoPubView.class, Util.getClassFromString(Util.MOPUB_BANNER_VIEW_CLASS));
-        assertEquals(MoPubInterstitial.class, Util.getClassFromString(Util.MOPUB_INTERSTITIAL_CLASS));
-        assertEquals(PublisherAdRequest.class, Util.getClassFromString(Util.DFP_AD_REQUEST_CLASS));
+        assertEquals(ADG.class, Util.getClassFromString(Util.ADG_VIEW_CLASS));
+        assertEquals(ADGInterstitial.class, Util.getClassFromString(Util.ADG_INTERSTITIAL_VIEW_CLASS));
     }
 
     @Test
     public void testApplyBidsToMoPubAdobject() throws Exception {
-        MoPubView adView = new MoPubView(activity);
-        adView.setKeywords("key1:value1,key2:value2");
+        ADG adg = new ADG(activity);
+        adg.addRequestOptionParam("key", "param");
         HashMap<String, String> bids = new HashMap<>();
         bids.put("hb_pb", "0.50");
         bids.put("hb_cache_id", "123456");
-        Util.apply(bids, adView);
-        String adViewKeywords = adView.getKeywords();
-        assertEquals("hb_pb:0.50,hb_cache_id:123456,key1:value1,key2:value2", adViewKeywords);
-        Util.apply(null, adView);
-        assertEquals("key1:value1,key2:value2", adView.getKeywords());
-        MoPubInterstitial instl = new MoPubInterstitial(activity, "123456");
-        instl.setKeywords("key1:value1,key2:value2");
-        Util.apply(bids, instl);
-        assertEquals("hb_pb:0.50,hb_cache_id:123456,key1:value1,key2:value2", instl.getKeywords());
-        Util.apply(null, instl);
-        assertEquals("key1:value1,key2:value2", instl.getKeywords());
-    }
+        Util.apply(bids, adg);
+        assertEquals(new HashMap<String, String>() {{
+            put("key", "param");
+            put("hb_pb", "0.50");
+            put("hb_cache_id", "123456");
+        }},  adg.getRequestOptionParams());
 
-    @Test
-    public void testApplyBidsToDFOAdObject() throws Exception {
-        PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
-        builder.addCustomTargeting("Key", "Value");
-        HashMap<String, String> bids = new HashMap<>();
-        bids.put("hb_pb", "0.50");
-        bids.put("hb_cache_id", "123456");
-        PublisherAdRequest request = builder.build();
-        Util.apply(bids, request);
-        assertEquals(3, request.getCustomTargeting().size());
-        assertTrue(request.getCustomTargeting().containsKey("Key"));
-        assertEquals("Value", request.getCustomTargeting().get("Key"));
-        assertTrue(request.getCustomTargeting().containsKey("hb_pb"));
-        assertEquals("0.50", request.getCustomTargeting().get("hb_pb"));
-        assertTrue(request.getCustomTargeting().containsKey("hb_cache_id"));
-        assertEquals("123456", request.getCustomTargeting().get("hb_cache_id"));
-        Util.apply(null, request);
-        assertEquals(1, request.getCustomTargeting().size());
-        assertTrue(request.getCustomTargeting().containsKey("Key"));
-        assertEquals("Value", request.getCustomTargeting().get("Key"));
+        Util.apply(null, adg);
+        assertEquals(new HashMap<String, String>() {{
+            put("key", "param");
+        }}, adg.getRequestOptionParams());
+
+        ADGInterstitial instl = new ADGInterstitial(activity);
+        instl.addRequestOptionParam("key","param");
+        Util.apply(bids, instl);
+        assertEquals(new HashMap<String, String>() {{
+            put("key", "param");
+            put("hb_pb", "0.50");
+            put("hb_cache_id", "123456");
+        }}, instl.getRequestOptionParams());
+        Util.apply(null, instl);
+        assertEquals(new HashMap<String, String>() {{
+            put("key", "param");
+        }}, instl.getRequestOptionParams());
     }
 
     @Test
     public void testSupportedAdObject() throws Exception {
-        MoPubView testView = new MoPubView(activity);
+        ADG testView = new ADG(activity);
         assertTrue(Util.supportedAdObject(testView));
         assertFalse(Util.supportedAdObject(null));
-        MoPubInterstitial interstitial = new MoPubInterstitial(activity, "");
+        ADGInterstitial interstitial = new ADGInterstitial(activity);
         assertTrue(Util.supportedAdObject(interstitial));
-        PublisherAdRequest request = new PublisherAdRequest.Builder().build();
-        assertTrue(Util.supportedAdObject(request));
         Object object = new Object();
         assertFalse(Util.supportedAdObject(object));
     }

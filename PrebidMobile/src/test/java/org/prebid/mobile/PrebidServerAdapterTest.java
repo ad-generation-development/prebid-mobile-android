@@ -21,7 +21,7 @@ import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import com.mopub.mobileads.MoPubView;
+import com.socdm.d.adgeneration.ADG;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.commons.lang3.reflect.MethodUtils;
@@ -650,9 +650,9 @@ public class PrebidServerAdapterTest extends BaseSetup {
         adUnit.addUserKeyword("key4", "value2");
         adUnit.addUserKeyword("key5", "value1");
         adUnit.addUserKeyword("key5", "value2");
-        MoPubView testView = new MoPubView(activity);
+        ADG adg = new ADG(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
-        adUnit.fetchDemand(testView, mockListener);
+        adUnit.fetchDemand(adg, mockListener);
         DemandFetcher fetcher = (DemandFetcher) FieldUtils.readField(adUnit, "fetcher", true);
         PrebidMobile.setTimeoutMillis(Integer.MAX_VALUE);
         ShadowLooper fetcherLooper = shadowOf(fetcher.getHandler().getLooper());
@@ -665,7 +665,7 @@ public class PrebidServerAdapterTest extends BaseSetup {
         PrebidMobile.setPrebidServerHost(Host.CUSTOM);
         adUnit.clearUserKeywords();
         OnCompleteListener mockListenerNoKV = mock(OnCompleteListener.class);
-        adUnit.fetchDemand(testView, mockListenerNoKV);
+        adUnit.fetchDemand(adg, mockListenerNoKV);
         fetcher = (DemandFetcher) FieldUtils.readField(adUnit, "fetcher", true);
         PrebidMobile.setTimeoutMillis(Integer.MAX_VALUE);
         fetcherLooper = shadowOf(fetcher.getHandler().getLooper());
@@ -1445,9 +1445,9 @@ public class PrebidServerAdapterTest extends BaseSetup {
         nativeAdUnit.addAsset(data);
         nativeAdUnit.setAutoRefreshPeriodMillis(30000);
 
-        MoPubView testView = new MoPubView(activity);
+        ADG adg = new ADG(activity);
         OnCompleteListener mockListener = mock(OnCompleteListener.class);
-        nativeAdUnit.fetchDemand(testView, mockListener);
+        nativeAdUnit.fetchDemand(adg, mockListener);
     }
 
     private JSONObject getPostDataHelper(AdType adType, @Nullable Map<String, Set<String>> contextDataDictionary, @Nullable Set<String> contextKeywordsSet, @Nullable AdSize minSizePerc, @Nullable Integer videoPlacement) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {

@@ -21,26 +21,19 @@ import android.app.Application
 import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager.LayoutParams.*
-import com.mopub.common.MoPub
-import com.mopub.common.SdkConfiguration
 import org.prebid.mobile.Host
 import org.prebid.mobile.PrebidMobile
+//import androidx.multidex.MultiDexApplication
 import java.util.*
 
 class CustomApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        //init MoPub SDK
-        val networksToInit = ArrayList<String>()
-        networksToInit.add("com.mopub.mobileads.VungleRewardedVideo")
-        val sdkConfiguration = SdkConfiguration.Builder("a935eac11acd416f92640411234fbba6")
-            .withNetworksToInit(networksToInit)
-            .build()
-        MoPub.initializeSdk(this, sdkConfiguration, null)
         //set Prebid Mobile global Settings
         //region PrebidMobile API
         PrebidMobile.setPrebidServerAccountId(Constants.PBS_ACCOUNT_ID)
         PrebidMobile.setPrebidServerHost(Host.APPNEXUS)
+        PrebidMobile.setTimeoutMillis(5_000)
         PrebidMobile.setShareGeoLocation(true)
         PrebidMobile.setApplicationContext(applicationContext)
         //endregion

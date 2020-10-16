@@ -6,7 +6,7 @@ include ':PrebidMobile',
         ':PrebidDemoKotlin',
 
 //tools
-        ':DrPrebid'
+        ':DrPrebid', ':adg-2.17.0-prebid'
 
 project(':PrebidMobile-core').projectDir = new File('PrebidMobile/PrebidMobile-core')
 
